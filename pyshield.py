@@ -6,7 +6,6 @@ Scanner de arquivos com assinaturas atualizaveis, quarentena, logs e monitoramen
 
 import hashlib
 import json
-import math
 import os
 import shutil
 import sys
@@ -14,7 +13,6 @@ import time
 import threading
 import urllib.request
 import urllib.error
-from collections import Counter
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
@@ -110,38 +108,6 @@ def calculate_hash(filepath: str, algorithm: str = "sha256") -> str:
         return hasher.hexdigest()
     except:
         return ""
-
-
-def calculate_entropy(data: bytes) -> float:
-    if not data:
-        return 0.0
-    counter = Counter(data)
-    length = len(data)
-    entropy = 0.0
-    for count in counter.values():
-        p = count / length
-        if p > 0:
-            entropy -= p * math.log2(p)
-    return entropy
-
-
-def analyze_entropy(filepath: str) -> Tuple[float, str]:
-    try:
-        with open(filepath, 'rb') as f:
-            data = f.read(64 * 1024)
-        if not data:
-            return 0.0, "Arquivo vazio"
-        entropy = calculate_entropy(data)
-        if entropy > 7.5:
-            return entropy, "ENTROPIA MUITO ALTA - possivel arquivo encriptado/pacotado"
-        elif entropy > 6.8:
-            return entropy, "Entropia alta - possivel comprimido/encriptado"
-        elif entropy > 5.5:
-            return entropy, "Entropia normal"
-        else:
-            return entropy, "Entropia baixa - texto puro"
-    except:
-        return 0.0, "Erro ao ler"
 
 
 def format_size(size: int) -> str:
