@@ -218,9 +218,17 @@ def load_signatures_with_progress(path: str) -> Dict:
 
 # ==================== ANALISE ====================
 
-def analyze_file(filepath: str, signatures: Dict, patterns: Dict) -> Tuple[str, Optional[Dict], str]:
-    malware = signatures.get("malware_hashes", {})
+def analyze_file(filepath: str, malware: Dict, patterns: Dict) -> Tuple[str, Optional[Dict], str]:
     ext = Path(filepath).suffix.lower()
+
+    if os.path.abspath(filepath) == os.path.abspath(SIG_PATH):
+        return "clean", None, ""
+    if os.path.abspath(filepath) == os.path.abspath(__file__):
+        return "clean", None, ""
+    if os.path.abspath(filepath).startswith(os.path.abspath(BASE_DIR)):
+        rel = os.path.relpath(filepath, BASE_DIR)
+        if rel.startswith("__pycache__"):
+            return "clean", None, ""
 
     try:
         file_size = os.path.getsize(filepath)
@@ -236,26 +244,6 @@ def analyze_file(filepath: str, signatures: Dict, patterns: Dict) -> Tuple[str, 
 
     if ext in ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.mp3', '.mp4', '.avi', '.mkv', '.zip', '.rar', '.7z', '.pdf']:
         return "clean", None, ""
-
-    try:
-        with open(filepath, 'rb') as f:
-            content_bytes = f.read(1024 * 1024)
-            content = content_bytes.decode('utf-8', errors='ignore').lower()
-            content_ascii = content_bytes.decode('ascii', errors='ignore').lower()
-
-        eicar_marker = "eicar-standard-antivirus-test-file"
-        if eicar_marker in content or eicar_marker in content_ascii:
-            return "threat", {
-                "hash": "EICAR-TEST-FILE",
-                "info": {
-                    "name": "EICAR-Test-File",
-                    "type": "test",
-                    "risk": "test",
-                    "description": "Arquivo de teste padrao da industria - NAO e malware real"
-                }
-            }, "String EICAR detectada no conteudo"
-    except:
-        pass
 
     md5 = calculate_hash(filepath, "md5")
     if md5 in malware:
