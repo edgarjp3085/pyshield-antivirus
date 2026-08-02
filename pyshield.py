@@ -242,7 +242,7 @@ def analyze_file(filepath: str, malware: Dict, patterns: Dict) -> Tuple[str, Opt
         if file_size > 1024 * 1024:
             return "clean", None, ""
 
-    if ext in ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.mp3', '.mp4', '.avi', '.mkv', '.zip', '.rar', '.7z', '.pdf']:
+    if ext in ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.mp3', '.mp4', '.avi', '.mkv', '.zip', '.rar', '.7z', '.pdf', '.woff', '.woff2', '.ttf', '.otf', '.eot', '.pyc', '.pyo', '.so', '.dll', '.exe', '.msi', '.deb', '.rpm', '.tar', '.gz', '.bz2', '.xz', '.zst']:
         return "clean", None, ""
 
     md5 = calculate_hash(filepath, "md5")
