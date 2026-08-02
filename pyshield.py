@@ -257,12 +257,6 @@ def analyze_file(filepath: str, malware: Dict, patterns: Dict) -> Tuple[str, Opt
         if info.get("risk") not in ["none", "benign"]:
             return "threat", {"hash": sha256, "algorithm": "SHA256", "info": info}, "SHA256 corresponde a malware conhecido"
 
-    entropy, desc = analyze_entropy(filepath)
-    if entropy > 7.5:
-        return "suspicious", {"entropy": entropy, "description": desc}, f"Entropia muito alta ({entropy:.2f}) - possivel encriptado/ofuscado"
-    elif entropy > 6.8:
-        return "warning", {"entropy": entropy, "description": desc}, f"Entropia alta ({entropy:.2f}) - possivel comprimido/encriptado"
-
     return "clean", None, ""
 
 
