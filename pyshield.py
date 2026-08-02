@@ -457,6 +457,7 @@ def run_scan():
     threats_found = []
     start = time.time()
     last_update = 0
+    _scan_stop = False
 
     def _scan_one(filepath, i):
         nonlocal last_update
@@ -496,16 +497,8 @@ def run_scan():
                     algo = details.get("algorithm", "N/A")
                     print(f"       Nome: {info.get('name', 'N/A')} | Tipo: {info.get('type', 'N/A')} | Algo: {algo}")
                 print(f"       Motivo: {reason}")
-
-                resp = input(f"       {Colors.YELLOW}Isolar em quarentena? (s/n): {Colors.RESET}").strip().lower()
-                if resp == 's':
-                    if quarantine_file(filepath, risk, details, reason):
-                        stats["quarantined"] += 1
-                        print(f"       {Colors.MAGENTA}-> Isolado em quarentena{Colors.RESET}")
-
                 sys.stdout.write("\033[3A")
                 sys.stdout.flush()
-
                 append_log("scan", f"THREAT: {filepath} | {reason}")
 
             elif risk == "suspicious":
@@ -516,7 +509,6 @@ def run_scan():
                 print(f"       Motivo: {reason}")
                 sys.stdout.write("\033[3A")
                 sys.stdout.flush()
-
                 append_log("scan", f"SUSPICIOUS: {filepath} | {reason}")
 
             elif risk == "warning":
@@ -539,13 +531,18 @@ def run_scan():
         count = 0
         try:
             for root, dirs, filenames in os.walk(path):
+                if _scan_stop:
+                    break
                 for fn in filenames:
+                    if _scan_stop:
+                        break
                     count += 1
                     filepath = os.path.join(root, fn)
                     _scan_one(filepath, count)
                 if not recursive:
                     break
         except KeyboardInterrupt:
+            _scan_stop = True
             print(f"\n\n  {Colors.YELLOW}[PAUSADO]{Colors.RESET} Scan interrompido pelo usuario")
 
     total_time = time.time() - start
@@ -568,6 +565,14 @@ def run_scan():
     if stats["threats"] > 0:
         print(f"\n  {Colors.RED}{Colors.BOLD}  [X] AMEACAS DETECTADAS!{Colors.RESET}")
         print(f"  {Colors.RED}  Recomendacao: Isolar e remover arquivos{Colors.RESET}")
+        resp = input(f"\n  {Colors.YELLOW}Isolar ameacas em quarentena? (s/n): {Colors.RESET}").strip().lower()
+        if resp == 's':
+            for t in threats_found:
+                if t["risk"] == "threat":
+                    if quarantine_file(t["path"], t["risk"], t["details"], t["reason"]):
+                        stats["quarantined"] += 1
+                        print(f"  {Colors.MAGENTA}-> Isolado: {t['path']}{Colors.RESET}")
+            print(f"\n  {Colors.WHITE}Quarentena:{Colors.RESET} {stats['quarantined']} arquivo(s) isolado(s)")
     elif stats["suspicious"] > 0:
         print(f"\n  {Colors.YELLOW}{Colors.BOLD}  [!] ARQUIVOS SUSPEITOS{Colors.RESET}")
         print(f"  {Colors.YELLOW}  Recomendacao: Revisar manualmente{Colors.RESET}")
