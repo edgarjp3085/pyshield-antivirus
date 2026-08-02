@@ -459,6 +459,15 @@ def run_scan():
     last_update = 0
     _scan_stop = False
 
+    def _stop_handler(sig, frame):
+        nonlocal _scan_stop
+        _scan_stop = True
+        raise KeyboardInterrupt
+
+    import signal
+    _old_handler = signal.getsignal(signal.SIGINT)
+    signal.signal(signal.SIGINT, _stop_handler)
+
     def _scan_one(filepath, i):
         nonlocal last_update
         now = time.time()
@@ -543,7 +552,10 @@ def run_scan():
                     break
         except KeyboardInterrupt:
             _scan_stop = True
-            print(f"\n\n  {Colors.YELLOW}[PAUSADO]{Colors.RESET} Scan interrompido pelo usuario")
+
+    signal.signal(signal.SIGINT, _old_handler)
+    if _scan_stop:
+        print(f"\n\n  {Colors.YELLOW}[PAUSADO]{Colors.RESET} Scan interrompido pelo usuario")
 
     total_time = time.time() - start
     sys.stdout.write(f"\033[3B\033[2K\r")
