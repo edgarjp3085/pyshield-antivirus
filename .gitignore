@@ -1,0 +1,6 @@
+quarantine/
+logs/
+__pycache__/
+*.pyc
+*.bak
+*.log
