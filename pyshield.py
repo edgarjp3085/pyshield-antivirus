@@ -257,6 +257,12 @@ def analyze_file(filepath: str, malware: Dict, patterns: Dict) -> Tuple[str, Opt
         if info.get("risk") not in ["none", "benign"]:
             return "threat", {"hash": sha256, "algorithm": "SHA256", "info": info}, "SHA256 corresponde a malware conhecido"
 
+    entropy, desc = analyze_entropy(filepath)
+    if entropy > 7.5:
+        return "suspicious", {"entropy": entropy, "description": desc}, f"Entropia muito alta ({entropy:.2f}) - possivel encriptado/ofuscado"
+    elif entropy > 6.8:
+        return "warning", {"entropy": entropy, "description": desc}, f"Entropia alta ({entropy:.2f}) - possivel comprimido/encriptado"
+
     return "clean", None, ""
 
 
@@ -705,66 +711,6 @@ def run_realtime_monitor():
 
 # ==================== ENTROPIA ====================
 
-def run_entropy_scan():
-    print_header()
-    print(f"  {Colors.CYAN}{Colors.BOLD}ANALISE DE ENTROPIA{Colors.RESET}\n")
-    print(f"  {Colors.DIM}Detecta arquivos encriptados, pacotados ou comprimidos{Colors.RESET}\n")
-
-    path = input(f"  {Colors.WHITE}Caminho para analisar: {Colors.RESET}").strip()
-
-    if not path or not os.path.exists(path):
-        print(f"  {Colors.RED}[ERRO]{Colors.RESET} Caminho invalido")
-        pause()
-        return
-
-    if os.path.isfile(path):
-        files = [path]
-    else:
-        files = []
-        for root, dirs, filenames in os.walk(path):
-            for fn in filenames:
-                fp = os.path.join(root, fn)
-                try:
-                    sz = os.path.getsize(fp)
-                    if sz > 0 and sz < 50 * 1024 * 1024:
-                        files.append(fp)
-                except:
-                    pass
-
-    if not files:
-        print(f"  {Colors.YELLOW}[INFO]{Colors.RESET} Nenhum arquivo para analisar")
-        pause()
-        return
-
-    print(f"  {Colors.WHITE}Arquivos para analisar: {len(files)}{Colors.RESET}\n")
-
-    high_entropy = []
-    for i, fp in enumerate(files, 1):
-        if i % 100 == 0:
-            print(f"\r  {Colors.DIM}Analisando: {i}/{len(files)}{Colors.RESET}", end="", flush=True)
-
-        entropy, desc = analyze_entropy(fp)
-        if entropy > 6.8:
-            high_entropy.append((fp, entropy, desc))
-
-    print(f"\r  {Colors.DIM}                                    {Colors.RESET}")
-    print(f"\n  {Colors.CYAN}{'='*54}{Colors.RESET}")
-    print(f"  {Colors.BOLD}  RESULTADO DA ENTROPIA{Colors.RESET}")
-    print(f"  {Colors.CYAN}{'='*54}{Colors.RESET}")
-    print(f"  {Colors.WHITE}Total analisado:{Colors.RESET} {len(files)}")
-    print(f"  {Colors.YELLOW}Alta entropia:{Colors.RESET}   {len(high_entropy)}")
-
-    if high_entropy:
-        high_entropy.sort(key=lambda x: -x[1])
-        print(f"\n  {Colors.WHITE}Top arquivos com alta entropia:{Colors.RESET}\n")
-        for fp, ent, desc in high_entropy[:20]:
-            color = Colors.RED if ent > 7.5 else Colors.YELLOW
-            print(f"  {color}ENT={ent:.2f}{Colors.RESET} {Colors.DIM}{fp}{Colors.RESET}")
-            print(f"          {desc}")
-    else:
-        print(f"\n  {Colors.GREEN}[OK]{Colors.RESET} Nenhum arquivo com entropia suspeita")
-
-    pause()
 
 
 # ==================== ATUALIZAR ====================
@@ -1080,12 +1026,11 @@ def main():
         print(f"  {Colors.WHITE}Escolha uma opcao:{Colors.RESET}\n")
         print(f"    {Colors.GREEN}[1]{Colors.RESET} Escanear arquivos")
         print(f"    {Colors.GREEN}[2]{Colors.RESET} Monitoramento em tempo real")
-        print(f"    {Colors.GREEN}[3]{Colors.RESET} Analise de entropia")
-        print(f"    {Colors.GREEN}[4]{Colors.RESET} Quarentena")
-        print(f"    {Colors.GREEN}[5]{Colors.RESET} Atualizar assinaturas")
-        print(f"    {Colors.GREEN}[6]{Colors.RESET} Status do sistema")
-        print(f"    {Colors.GREEN}[7]{Colors.RESET} Logs")
-        print(f"    {Colors.GREEN}[8]{Colors.RESET} Sobre")
+        print(f"    {Colors.GREEN}[3]{Colors.RESET} Quarentena")
+        print(f"    {Colors.GREEN}[4]{Colors.RESET} Atualizar assinaturas")
+        print(f"    {Colors.GREEN}[5]{Colors.RESET} Status do sistema")
+        print(f"    {Colors.GREEN}[6]{Colors.RESET} Logs")
+        print(f"    {Colors.GREEN}[7]{Colors.RESET} Sobre")
         print(f"    {Colors.RED}[0]{Colors.RESET} Sair")
 
         choice = input(f"\n  {Colors.WHITE}>> {Colors.RESET}").strip()
@@ -1095,16 +1040,14 @@ def main():
         elif choice == "2":
             run_realtime_monitor()
         elif choice == "3":
-            run_entropy_scan()
-        elif choice == "4":
             show_quarantine()
-        elif choice == "5":
+        elif choice == "4":
             update_signatures()
-        elif choice == "6":
+        elif choice == "5":
             show_status()
-        elif choice == "7":
+        elif choice == "6":
             show_logs()
-        elif choice == "8":
+        elif choice == "7":
             show_about()
         elif choice == "0":
             print(f"\n  {Colors.GREEN}Saindo...{Colors.RESET}\n")
